@@ -112,4 +112,39 @@ class SimpleCNN16x16(nn.Module):
         x = x.view(x.size(0), -1)
 
         x = self.dropout(F.relu(self.fc1(x)))
+
         return self.fc2(x)
+
+class MTF_CNN(nn.Module):
+    def __init__(self, in_channels=1):
+        super(MTF_CNN, self).__init__()
+        
+        # Conv1: 11×11 kernel, 6 filters, ReLU, MaxPool 2×2
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels, 6, kernel_size=11, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2)
+        )
+        
+        # Conv2: 11×11 kernel, 32 filters, ReLU, MaxPool 3×3
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(6, 32, kernel_size=11, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=3, stride=3)
+        )
+
+        # Flatten → Dense layers: 10 → 10 → 1
+        self.fc_layers = nn.Sequential(
+            nn.Linear(30752, 10),  # matches flatten size from table (30,752)
+            nn.ReLU(),
+            nn.Linear(10, 10),
+            nn.ReLU(),
+            nn.Linear(10, 1)
+        )
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = torch.flatten(x, 1)  # flatten except batch dim
+        x = self.fc_layers(x)
+        return x
